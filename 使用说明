@@ -1,0 +1,28 @@
+# 使用这些脚本必须目录下必须有.git文件，如果你是利用命令行clone下来的代码是没有.git文件的，执行以下步骤：
+git init  --初始化
+
+git remote add origin <远端仓库地址>   --与远程仓库建立连接
+
+git remote -v    --验证是否添加成功
+
+
+echo "[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+.DS_Store
+" > .gitignore  --创建 .gitignore 文件并配置 Unity 项目的忽略规则
+
+操作完就可以使用了
