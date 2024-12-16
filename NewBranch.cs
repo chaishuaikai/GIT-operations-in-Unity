@@ -1,4 +1,4 @@
-﻿using UnityEditor;
+using UnityEditor;
 using UnityEngine;
 using System.Diagnostics;
 using System.Collections.Generic;
@@ -15,10 +15,10 @@ public class NewBranch : EditorWindow
     private List<string> remoteBranches = new List<string>();
 
     private Vector2 scrollPosition;
-    private List<bool> localBranchSelection = new List<bool>();
+    private List<bool> localBranchSelection = new List<bool>(); 
     private List<bool> remoteBranchSelection = new List<bool>();
 
-    private bool forceDeleteBranch = false;
+    private bool forceDeleteBranch = false; 
 
 
     [MenuItem("GIT/分支")]
@@ -53,7 +53,7 @@ public class NewBranch : EditorWindow
                 }
             }
 
-            // 获取所有本地分支
+
             ProcessStartInfo localBranchesPsi = new ProcessStartInfo
             {
                 FileName = "git",
@@ -70,7 +70,7 @@ public class NewBranch : EditorWindow
                     string localBranchesOutput = process.StandardOutput.ReadToEnd();
                     localBranches = new List<string>(localBranchesOutput.Split('\n'));
                     localBranches.RemoveAll(branch => string.IsNullOrWhiteSpace(branch));
-                    //UnityEngine.Debug.Log($"本地分支: {string.Join(", ", localBranches)}");
+                    // UnityEngine.Debug.Log($"本地分支: {string.Join(", ", localBranches)}");
                 }
             }
 
@@ -91,26 +91,25 @@ public class NewBranch : EditorWindow
                     remoteBranches = new List<string>(remoteBranchesOutput.Split('\n'));
                     remoteBranches.RemoveAll(branch => string.IsNullOrWhiteSpace(branch));
 
-                    //UnityEngine.Debug.Log($"远程分支: {string.Join(", ", remoteBranches)}");
+                    // UnityEngine.Debug.Log($"远程分支: {string.Join(", ", remoteBranches)}");
                 }
             }
 
-            if (localBranchSelection.Count != localBranches.Count)
+
+            localBranchSelection.Clear();
+            remoteBranchSelection.Clear();
+            for (int i = 0; i < localBranches.Count; i++)
             {
-                localBranchSelection.Clear();
-                for (int i = 0; i < localBranches.Count; i++)
-                {
-                    localBranchSelection.Add(false);
-                }
+                localBranchSelection.Add(false);
             }
-            if (remoteBranchSelection.Count != remoteBranches.Count)
+
+            for (int i = 0; i < remoteBranches.Count; i++)
             {
-                remoteBranchSelection.Clear();
-                for (int i = 0; i < remoteBranches.Count; i++)
-                {
-                    remoteBranchSelection.Add(false);
-                }
+                remoteBranchSelection.Add(false); 
             }
+
+
+            newBranchName = "";
         }
         catch (System.Exception ex)
         {
@@ -234,6 +233,7 @@ public class NewBranch : EditorWindow
 
         try
         {
+
             ProcessStartInfo createBranchPsi = new ProcessStartInfo
             {
                 FileName = "git",
@@ -257,10 +257,44 @@ public class NewBranch : EditorWindow
                         UnityEngine.Debug.Log($"成功创建本地分支：{branchName}");
                         createBranchFeedback = $"成功创建本地分支：{branchName}";
                     }
+                    else
+                    {
+                        Repaint();
+                    }
                 }
             }
 
-            LoadBranches();
+            ProcessStartInfo pushBranchPsi = new ProcessStartInfo
+            {
+                FileName = "git",
+                Arguments = $"push --set-upstream origin {branchName}",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using (Process pushProcess = Process.Start(pushBranchPsi))
+            {
+                if (pushProcess != null)
+                {
+                    string pushOutput = pushProcess.StandardOutput.ReadToEnd();
+                    string pushError = pushProcess.StandardError.ReadToEnd();
+                    pushProcess.WaitForExit();
+
+                    if (pushOutput.Contains("Branch") || pushOutput.Contains("new branch"))
+                    {
+                        UnityEngine.Debug.Log($"成功推送并设置远程分支：{branchName}");
+                        createBranchFeedback = $"成功推送并设置远程分支：{branchName}";
+                    }
+                    else
+                    {
+                        Repaint();
+                    }
+                }
+            }
+
+            LoadBranches(); 
         }
         catch (System.Exception ex)
         {
@@ -269,6 +303,8 @@ public class NewBranch : EditorWindow
             Repaint();
         }
     }
+
+
     private void DeleteSelectedBranches()
     {
         List<int> deletedIndexes = new List<int>();
@@ -286,7 +322,7 @@ public class NewBranch : EditorWindow
                     {
                         if (branchToDelete.StartsWith("origin/"))
                         {
-                            string deleteRemoteBranchArgs = $"push origin --delete {branchToDelete.Substring(7)}";
+                            string deleteRemoteBranchArgs = $"push origin --delete {branchToDelete.Substring(7)}"; 
                             ExecuteGitCommand(deleteRemoteBranchArgs, $"成功删除远程分支：{branchToDelete}");
                             ExecuteGitCommand("fetch --prune", "成功更新远程分支信息");
                         }
@@ -334,20 +370,20 @@ public class NewBranch : EditorWindow
 
         foreach (var index in deletedIndexes.OrderByDescending(x => x).ToList())
         {
-            if (index < localBranches.Count)
+            if (index < localBranches.Count) 
             {
                 localBranches.RemoveAt(index);
                 localBranchSelection.RemoveAt(index);
             }
 
-            if (index < remoteBranchSelection.Count)
+            if (index < remoteBranchSelection.Count) 
             {
                 remoteBranches.RemoveAt(index);
                 remoteBranchSelection.RemoveAt(index);
             }
         }
 
-        Repaint();
+        Repaint(); 
     }
 
     private void ExecuteGitCommand(string arguments, string successMessage)
