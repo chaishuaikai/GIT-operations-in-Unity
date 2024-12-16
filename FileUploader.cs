@@ -632,30 +632,31 @@ public class FileUploader : EditorWindow
     }
 
     //git命令
-    private string RunGitCommand(string command, string workingDirectory)
-    {
-        //设置编码为 UTF-8
-        //System.Diagnostics.Process.Start("cmd.exe", "/C chcp 65001 && " + command);
+     private string RunGitCommand(string command, string workingDirectory)
+   {
+       var startInfo = new ProcessStartInfo("git")
+       {
+           Arguments = command,
+           WorkingDirectory = workingDirectory,
+           RedirectStandardOutput = true,
+           RedirectStandardError = true,
+           UseShellExecute = false, 
+           CreateNoWindow = true 
+       };
 
-        ProcessStartInfo startInfo = new ProcessStartInfo("git")
-        {
-            Arguments = command,
-            WorkingDirectory = workingDirectory,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
+       using (Process process = Process.Start(startInfo))
+       {
+           string output = process.StandardOutput.ReadToEnd();
 
-        using (Process process = Process.Start(startInfo))
-        {
-            string output = process.StandardOutput.ReadToEnd();
-            process.WaitForExit();
-            if (process.ExitCode != 0)
-            {
-                throw new Exception(process.StandardError.ReadToEnd());
-            }
-            return output.Trim();
-        }
-    }
+           process.WaitForExit();
+
+           if (process.ExitCode != 0)
+           {
+               string error = process.StandardError.ReadToEnd();
+               throw new Exception(error);
+           }
+           return output.Trim();
+       }
+   }
+
 }
