@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -19,7 +19,7 @@ public class BranchManagement : EditorWindow
     private bool fetchMissingBranchesOnly = false;
     private bool fetchAllTags = false;
 
-    [MenuItem("GIT/获取")]
+    [MenuItem("GIT/拉取分支")]
     public static void ShowWindow()
     {
         BranchManagement window = GetWindow<BranchManagement>("分支管理");
@@ -30,26 +30,26 @@ public class BranchManagement : EditorWindow
     }
     private void UpdateBranchLists()
     {
-        remoteBranches = LoadBranches("branch -r"); // 获取远端分支
-        localBranches = LoadBranches("branch");    // 获取本地分支
-        remoteTags = LoadBranches("tag -l"); // 获取远端标签
-        localTags = LoadBranches("tag");     // 获取本地标签
+        remoteBranches = LoadBranches("branch -r");
+        localBranches = LoadBranches("branch");    
+        remoteTags = LoadBranches("tag -l"); 
+        localTags = LoadBranches("tag");     
 
-        // 获取当前本地分支，并移除它
+
         string currentBranch = GetCurrentBranch();
         if (!string.IsNullOrEmpty(currentBranch) && localBranches.Contains(currentBranch))
         {
             localBranches.Remove(currentBranch);
         }
 
-        // 移除远端分支名称中的 origin，并与本地分支对比
+
         missingBranches = remoteBranches
-            .Select(branch => branch.Replace("origin/", "").Trim()) // 去掉 origin 前缀
-            .Where(branch => !localBranches.Contains(branch) && branch != currentBranch) // 排除当前分支
+            .Select(branch => branch.Replace("origin/", "").Trim()) 
+            .Where(branch => !localBranches.Contains(branch) && branch != currentBranch) 
             .ToList();
 
     }
-    // 获取当前本地分支
+ 
     private string GetCurrentBranch()
     {
         try
@@ -78,7 +78,7 @@ public class BranchManagement : EditorWindow
             return string.Empty;
         }
     }
-    //获取分支或标签列表
+
     private List<string> LoadBranches(string gitArgs)
     {
         List<string> branches = new List<string>();
@@ -123,7 +123,7 @@ public class BranchManagement : EditorWindow
         return branches;
     }
 
-    //拉取缺失的远端分支
+    
     private void FetchMissingBranches()
     {
         foreach (string branch in missingBranches)
@@ -157,7 +157,7 @@ public class BranchManagement : EditorWindow
             }
         }
 
-        // 更新分支列表
+        
         UpdateBranchLists();
     }
     private void FetchAllBranches()
@@ -166,23 +166,22 @@ public class BranchManagement : EditorWindow
         {
             try
             {
-                // 跳过符号引用 origin/HEAD
                 if (branch.Equals("origin/HEAD"))
                 {
                     continue;
                 }
 
-                // 去掉 origin 前缀
                 string localBranch = branch.Replace("origin/", "").Trim();
 
-                // 如果本地分支已经存在，跳过
                 if (localBranches.Contains(localBranch))
                 {
                     UnityEngine.Debug.Log($"分支 {localBranch} 已存在，跳过拉取。");
-                    continue;  // 本地已有该分支，跳过拉取
+                    continue;
                 }
 
-                // 拉取并创建分支
+                // 这里输出每个远程分支的信息
+                UnityEngine.Debug.Log($"开始拉取远程分支: {branch}");
+
                 ProcessStartInfo startInfo = new ProcessStartInfo
                 {
                     FileName = "git",
@@ -200,12 +199,13 @@ public class BranchManagement : EditorWindow
 
                     if (process.ExitCode != 0)
                     {
-
+                        UnityEngine.Debug.LogError($"拉取分支 {branch} 时出错: {process.StandardError.ReadToEnd()}");
                         continue;
                     }
                 }
 
-                // 本地分支跟踪远程分支
+                UnityEngine.Debug.Log($"分支 {localBranch} 拉取成功。");
+
                 ProcessStartInfo setUpstreamInfo = new ProcessStartInfo
                 {
                     FileName = "git",
@@ -227,10 +227,7 @@ public class BranchManagement : EditorWindow
                     }
                 }
 
-                // 成功创建本地分支后，从 missingBranches 列表中移除该分支
                 missingBranches.Remove(localBranch);
-
-                // 将本地分支添加到 localBranches 列表
                 localBranches.Add(localBranch);
             }
             catch (System.Exception ex)
@@ -239,11 +236,10 @@ public class BranchManagement : EditorWindow
             }
         }
 
-        // 更新分支列表
         UpdateBranchLists();
     }
 
-    //拉取所有远端标签
+
     private void FetchAllTags()
     {
         foreach (string tag in remoteTags)
@@ -280,7 +276,7 @@ public class BranchManagement : EditorWindow
             }
         }
 
-        // 更新分支列表
+        
         UpdateBranchLists();
     }
 
@@ -289,7 +285,7 @@ public class BranchManagement : EditorWindow
         GUILayout.Space(5);
         GUILayout.Label("分支管理工具", EditorStyles.boldLabel);
 
-        // 刷新按钮
+       
         Rect buttonRect = new Rect(position.width - 110, 10, 100, 30);
         if (GUI.Button(buttonRect, "刷新分支列表"))
         {
@@ -303,21 +299,21 @@ public class BranchManagement : EditorWindow
         GUILayout.Label("本地缺失的远端分支:", EditorStyles.boldLabel);
 
         GUILayout.Space(10);
-        // 滚动视图
+      
         scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition, GUILayout.Height(position.height - 300));
 
-        // 排除已存在的本地分支，确保不显示已经存在的分支
+        
         if (missingBranches.Count > 0)
         {
             foreach (string branch in missingBranches)
             {
-                // 仅显示远端存在但本地不存在的分支
+                
                 GUILayout.Label(branch);
             }
         }
         else
         {
-            // 如果没有缺失的分支，显示提示信息
+            
             GUILayout.Label("没有缺失的远端分支。");
         }
 
@@ -328,7 +324,7 @@ public class BranchManagement : EditorWindow
         fetchAllBranches = EditorGUILayout.Toggle("从远端拉取所有分支", fetchAllBranches);
         fetchAllTags = EditorGUILayout.Toggle("获取所有标签", fetchAllTags);
 
-        // 拉取按钮
+       
         if (GUILayout.Button("获取", GUILayout.Height(30)))
         {
             if (fetchAllBranches)
