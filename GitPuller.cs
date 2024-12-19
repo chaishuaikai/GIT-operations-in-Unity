@@ -16,7 +16,7 @@ public class GitPuller : EditorWindow
     private List<string> repositoryFiles = new List<string>();
     private HashSet<string> selectedFiles = new HashSet<string>();
 
-    [MenuItem("GIT/Git拉取文件")]
+    [MenuItem("GIT/拉取文件")]
     public static void ShowWindow()
     {
         GitPuller window = GetWindow<GitPuller>("Git拉取文件");
@@ -28,19 +28,23 @@ public class GitPuller : EditorWindow
 
     private void OnGUI()
     {
+        GUILayout.Space(10);
         GUILayout.BeginHorizontal();
         // 当前分支
         DisplayCurrentBranch(currentBranch);
         // 刷新按钮
         GUILayout.FlexibleSpace();
-        if (GUILayout.Button("刷新", GUILayout.Width(70), GUILayout.Height(30)))
+
+        Rect buttonRect = new Rect(position.width - 110, 10, 100, 30);
+
+        if (GUI.Button(buttonRect,"刷新"))
         {
             LoadBranches();
             LoadFilesToPull();
         }
         GUILayout.EndHorizontal();
 
-        GUILayout.Space(10);
+        GUILayout.Space(20);
 
         // 下拉框选择分支
         GUILayout.Label("切换分支：", EditorStyles.boldLabel);
@@ -62,7 +66,7 @@ public class GitPuller : EditorWindow
             GUILayout.Label("远端与本地不一致的文件：", EditorStyles.boldLabel);
 
             //滚动视图高度
-            scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition, GUILayout.Height(300));
+            scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition, GUILayout.Height(250));
             var filteredFiles = repositoryFiles.Where(file => !file.EndsWith(".meta")).ToList();
             foreach (var file in filteredFiles)
             {
@@ -72,10 +76,9 @@ public class GitPuller : EditorWindow
             EditorGUILayout.EndScrollView();
         }
 
-        GUILayout.Space(30);
 
         // 拉取按钮
-        if (GUILayout.Button("拉取所有文件"))
+        if (GUILayout.Button("拉取所有文件", GUILayout.Height(30)))
         {
             // 拉取所有文件
             PullAllFilesFromGit();
@@ -287,13 +290,13 @@ public class GitPuller : EditorWindow
             //拉取最新的文件列表
             LoadRepositoryFiles();
             EditorUtility.ClearProgressBar();
-            EditorUtility.DisplayDialog("成功", "已成功拉取并推送未推送的文件！", "确定");
+            EditorUtility.DisplayDialog("成功", "已成功拉取文件！", "确定");
         }
         catch (Exception ex)
         {
             EditorUtility.ClearProgressBar();
             UnityEngine.Debug.LogError($"拉取并推送文件失败: {ex.Message}");
-            EditorUtility.DisplayDialog("错误", $"拉取并推送文件失败: {ex.Message}", "确定");
+            EditorUtility.DisplayDialog("错误", $"拉取文件失败: {ex.Message}", "确定");
         }
     }
 
@@ -320,9 +323,9 @@ public class GitPuller : EditorWindow
 
     private string RunGitCommand(string command, string workingDirectory)
     {
-        ProcessStartInfo startInfo = new ProcessStartInfo("git")
+        ProcessStartInfo startInfo = new ProcessStartInfo("cmd.exe")
         {
-            Arguments = command,
+            Arguments = $"/C git {command}",
             WorkingDirectory = workingDirectory,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
