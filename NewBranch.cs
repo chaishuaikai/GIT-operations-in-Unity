@@ -4,6 +4,8 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Linq;
 using System;
+using System.Text;
+
 
 public class NewBranch : EditorWindow
 {
@@ -15,13 +17,13 @@ public class NewBranch : EditorWindow
     private List<string> remoteBranches = new List<string>();
 
     private Vector2 scrollPosition;
-    private List<bool> localBranchSelection = new List<bool>(); 
+    private List<bool> localBranchSelection = new List<bool>();
     private List<bool> remoteBranchSelection = new List<bool>();
 
-    private bool forceDeleteBranch = false; 
+    private bool forceDeleteBranch = false;
 
 
-    [MenuItem("GIT/分支")]
+    [MenuItem("GIT/创建和删除分支")]
     public static void ShowWindow()
     {
         NewBranch window = GetWindow<NewBranch>("分支");
@@ -105,7 +107,7 @@ public class NewBranch : EditorWindow
 
             for (int i = 0; i < remoteBranches.Count; i++)
             {
-                remoteBranchSelection.Add(false); 
+                remoteBranchSelection.Add(false);
             }
 
 
@@ -153,7 +155,7 @@ public class NewBranch : EditorWindow
         GUILayout.Space(10);
 
         Rect buttonRect = new Rect(position.width - 110, 10, 100, 30);
-        if (GUI.Button(buttonRect, "刷新分支列表"))
+        if (GUI.Button(buttonRect, "刷新"))
         {
             LoadBranches();
         }
@@ -198,7 +200,7 @@ public class NewBranch : EditorWindow
         GUILayout.EndHorizontal();
 
 
-        Rect ButtonsDel = new Rect(position.width - 110, 450, 100, 30);
+        Rect ButtonsDel = new Rect(position.width - 110, 400, 100, 30);
         if (GUI.Button(ButtonsDel, "删除选中的分支"))
         {
             DeleteSelectedBranches();
@@ -294,7 +296,7 @@ public class NewBranch : EditorWindow
                 }
             }
 
-            LoadBranches(); 
+            LoadBranches();
         }
         catch (System.Exception ex)
         {
@@ -322,7 +324,7 @@ public class NewBranch : EditorWindow
                     {
                         if (branchToDelete.StartsWith("origin/"))
                         {
-                            string deleteRemoteBranchArgs = $"push origin --delete {branchToDelete.Substring(7)}"; 
+                            string deleteRemoteBranchArgs = $"push origin --delete {branchToDelete.Substring(7)}";
                             ExecuteGitCommand(deleteRemoteBranchArgs, $"成功删除远程分支：{branchToDelete}");
                             ExecuteGitCommand("fetch --prune", "成功更新远程分支信息");
                         }
@@ -370,34 +372,35 @@ public class NewBranch : EditorWindow
 
         foreach (var index in deletedIndexes.OrderByDescending(x => x).ToList())
         {
-            if (index < localBranches.Count) 
+            if (index < localBranches.Count)
             {
                 localBranches.RemoveAt(index);
                 localBranchSelection.RemoveAt(index);
             }
 
-            if (index < remoteBranchSelection.Count) 
+            if (index < remoteBranchSelection.Count)
             {
                 remoteBranches.RemoveAt(index);
                 remoteBranchSelection.RemoveAt(index);
             }
         }
 
-        Repaint(); 
+        Repaint();
     }
 
     private void ExecuteGitCommand(string arguments, string successMessage)
     {
-        //UnityEngine.Debug.Log($"执行 Git 命令: git {arguments}");
-
+        
         ProcessStartInfo psi = new ProcessStartInfo
         {
-            FileName = "git",
-            Arguments = arguments,
+            FileName = "cmd.exe", 
+            Arguments = $"/c git {arguments}", 
             RedirectStandardOutput = true,
             RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
+            UseShellExecute = false, 
+            CreateNoWindow = true,   
+            StandardOutputEncoding = Encoding.UTF8, 
+            StandardErrorEncoding = Encoding.UTF8    
         };
 
         try
@@ -413,9 +416,6 @@ public class NewBranch : EditorWindow
                 string output = process.StandardOutput.ReadToEnd();
                 string error = process.StandardError.ReadToEnd();
                 process.WaitForExit();
-
-                //UnityEngine.Debug.Log($"Git 输出: {output}");
-                //UnityEngine.Debug.Log($"Git 错误: {error}");
 
                 if (process.ExitCode == 0)
                 {
@@ -435,5 +435,4 @@ public class NewBranch : EditorWindow
             createBranchFeedback = $"Git 命令执行失败：{ex.Message}";
         }
     }
-
 }
