@@ -1,4 +1,4 @@
-﻿using UnityEditor;
+using UnityEditor;
 using UnityEngine;
 using System.Diagnostics;
 using System.Text;
@@ -24,7 +24,7 @@ public class GitLog : EditorWindow
 
     private async Task FetchGitLogAsync()
     {
-        //获取提交者的信息
+        // 获取提交者的信息
         ProcessStartInfo startInfo = new ProcessStartInfo
         {
             FileName = "git",
@@ -52,22 +52,31 @@ public class GitLog : EditorWindow
         }
 
         gitLog = logBuilder.ToString();
+
+        // 捕获进程退出状态
         process.WaitForExit();
-        Repaint(); 
+        if (process.ExitCode != 0)
+        {
+            UnityEngine.Debug.LogError($"Git 命令执行失败，退出代码: {process.ExitCode}");
+        }
+
+        Repaint(); // 更新 UI
     }
 
     private void OnGUI()
     {
         GUILayout.BeginHorizontal();
         GUILayout.FlexibleSpace();
-        if (GUILayout.Button("刷新", GUILayout.Width(70), GUILayout.Height(30)))
+
+        Rect buttonRect = new Rect(position.width - 110, 10, 100, 30);
+
+        if (GUI.Button(buttonRect,"刷新"))
         {
-            FetchGitLogAsync();
+            _ = FetchGitLogAsync();  // 刷新日志
         }
         GUILayout.EndHorizontal();
 
-        GUILayout.Space(10);
-
+        GUILayout.Space(30);
         GUILayout.Label("Git Log", EditorStyles.boldLabel);
 
         if (string.IsNullOrEmpty(gitLog))
@@ -76,14 +85,25 @@ public class GitLog : EditorWindow
         }
         else
         {
-            scrollPosition = GUILayout.BeginScrollView(scrollPosition, GUILayout.ExpandHeight(true));
-
-            GUILayout.BeginVertical();
             string[] logs = gitLog.Split('\n');
 
-            for (int i = 0; i < logs.Length; i++)
+            // 计算可见区域
+            float itemHeight = 30f; // 每行高度
+            int visibleCount = Mathf.CeilToInt(position.height / itemHeight); // 可见区域内最多显示行数
+            int totalCount = logs.Length;
+
+            // 滚动条处理
+            scrollPosition = GUILayout.BeginScrollView(scrollPosition);
+
+            Rect scrollArea = GUILayoutUtility.GetRect(position.width, totalCount * itemHeight);
+            float scrollY = scrollPosition.y;
+            int firstVisibleIndex = Mathf.FloorToInt(scrollY / itemHeight);
+            int lastVisibleIndex = Mathf.Min(firstVisibleIndex + visibleCount, totalCount - 1);
+
+            for (int i = firstVisibleIndex; i <= lastVisibleIndex; i++)
             {
-                string[] logParts = logs[i].Split(new[] { ' ' }, 4); 
+                // 解析日志
+                string[] logParts = logs[i].Split(new[] { ' ' }, 4);
                 if (logParts.Length == 4)
                 {
                     string commitHash = logParts[0];
@@ -91,37 +111,25 @@ public class GitLog : EditorWindow
                     string description = logParts[2];
                     string time = logParts[3];
 
-                    GUILayout.BeginHorizontal();
+                    // 绘制行
+                    Rect itemRect = new Rect(0, i * itemHeight, position.width, itemHeight);
+                    GUI.BeginGroup(itemRect);
 
-                    GUILayout.Label(commitHash, GUILayout.Width(position.width * 0.2f));
-                    GUILayout.Label(author, GUILayout.Width(position.width * 0.2f));
-                    GUILayout.Label(description, GUILayout.Width(position.width * 0.4f)); 
-                    GUILayout.Label(time, GUILayout.ExpandWidth(true)); 
+                    GUI.Label(new Rect(10, 5, position.width * 0.2f, itemHeight), commitHash);
+                    GUI.Label(new Rect(position.width * 0.2f, 5, position.width * 0.2f, itemHeight), author);
+                    GUI.Label(new Rect(position.width * 0.4f, 5, position.width * 0.4f, itemHeight), description);
+                    GUI.Label(new Rect(position.width * 0.8f, 5, position.width * 0.2f, itemHeight), time);
 
-                    GUILayout.EndHorizontal();
-
-                    if (i == selectedLogIndex)
-                    {
-                        GUI.contentColor = Color.blue;
-                    }
-                    else
-                    {
-                        GUI.contentColor = Color.white;
-                    }
-
-                    if (GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition) &&
-                        Event.current.type == EventType.MouseDown)
+                    // 鼠标点击选择
+                    if (itemRect.Contains(Event.current.mousePosition) && Event.current.type == EventType.MouseDown)
                     {
                         selectedLogIndex = i;
                         Repaint();
                     }
 
-                    GUI.contentColor = Color.white;
-
-                    GUILayout.Space(5);
+                    GUI.EndGroup();
                 }
             }
-            GUILayout.EndVertical();
 
             GUILayout.EndScrollView();
         }
