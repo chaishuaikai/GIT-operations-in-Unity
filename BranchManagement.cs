@@ -18,8 +18,8 @@ public class BranchManagement : EditorWindow
 
     private Vector2 scrollPosition;
 
-    private bool fetchAllBranches = false;
-    private bool fetchMissingBranchesOnly = false;
+    //private bool fetchAllBranches = false;
+    //private bool fetchMissingBranchesOnly = false;
     private bool fetchAllTags = false;
 
     private Dictionary<string, bool> branchSelectionState = new Dictionary<string, bool>();
@@ -69,14 +69,14 @@ public class BranchManagement : EditorWindow
         {
             ProcessStartInfo startInfo = new ProcessStartInfo
             {
-                FileName = "cmd.exe", // 使用 cmd.exe
-                Arguments = $"/c git checkout -b {branch} origin/{branch}", // 通过 /c 执行 git 命令
+                FileName = "cmd.exe", 
+                Arguments = $"/c git checkout -b {branch} origin/{branch}", 
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
-                UseShellExecute = false, // 不使用 shell 执行
-                CreateNoWindow = true,   // 不创建命令行窗口
-                StandardOutputEncoding = Encoding.UTF8, // 设置标准输出编码为 UTF-8
-                StandardErrorEncoding = Encoding.UTF8    // 设置标准错误编码为 UTF-8
+                UseShellExecute = false, 
+                CreateNoWindow = true,  
+                StandardOutputEncoding = Encoding.UTF8, 
+                StandardErrorEncoding = Encoding.UTF8    
             };
 
             using (Process process = new Process { StartInfo = startInfo })
