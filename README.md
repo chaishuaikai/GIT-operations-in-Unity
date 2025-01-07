@@ -1,5 +1,6 @@
 # GIT-operations-in-Unity
 Unity中操作Git
+在untiy中向git推送拉取
 # FileUploader.cs   
 --这个脚本是向Git提交文件的，里边处理了，冲突的时候提交回滚
 如果删除了一个文件，点击刷新，会提示你，是否把git远端仓库的文件删除
