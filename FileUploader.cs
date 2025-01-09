@@ -307,7 +307,7 @@ public class FileUploader : EditorWindow
                     }
                     else if (isTracked && isModified)
                     {
-                        selectedFiles.Add(file);
+                        //selectedFiles.Add(file);
                     }
 
                     allFiles.Add(file);
