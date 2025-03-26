@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -44,17 +44,23 @@ public class FileUploader : EditorWindow
 
     private void OnEnable()
     {
-
-        folderPath = EditorPrefs.GetString("GitUploader_FolderPath", string.Empty);
+        if (EditorPrefs.HasKey("SelectedFolderPath"))
+        {
+            folderPath = EditorPrefs.GetString("SelectedFolderPath", "");
+            if (!string.IsNullOrEmpty(folderPath))
+            {
+                LoadFiles(folderPath);
+            }
+        }
     }
 
 
     private void SaveFolderPath(string path)
     {
         folderPath = path;
-
-        EditorPrefs.SetString("GitUploader_FolderPath", folderPath);
+        EditorPrefs.SetString("SelectedFolderPath", path);
     }
+
 
     private void OnGUI()
     {
@@ -91,13 +97,33 @@ public class FileUploader : EditorWindow
             string selectedFolder = EditorUtility.OpenFolderPanel("选择包含文件的文件夹", folderPath, "");
             if (!string.IsNullOrEmpty(selectedFolder))
             {
+                if (selectedFolder.StartsWith(Application.dataPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    folderPath = selectedFolder;
+                    SaveFolderPath(folderPath);
+                    LoadFiles(folderPath);
+                }
+                else
+                {
+                    EditorUtility.DisplayDialog("错误", "请选择当前 Unity 工程内的文件夹！", "确定");
+                    return;
+                }
                 SaveFolderPath(selectedFolder);
                 LoadFiles(selectedFolder);
             }
         }
 
         GUILayout.Label("已选择的文件夹路径：");
-        GUILayout.TextField(folderPath);
+
+        if (!string.IsNullOrEmpty(folderPath))
+        {
+            GUILayout.TextField(folderPath);
+        }
+        else
+        {
+            GUILayout.Label("未选择文件夹", EditorStyles.helpBox);
+        }
+
 
         GUILayout.Label("文件列表：");
         if (allFiles.Count > 0)
@@ -307,7 +333,8 @@ public class FileUploader : EditorWindow
                     }
                     else if (isTracked && isModified)
                     {
-                        //selectedFiles.Add(file);
+                        //自动勾选复选框
+                        // selectedFiles.Add(file);
                     }
 
                     allFiles.Add(file);
@@ -336,17 +363,17 @@ public class FileUploader : EditorWindow
 
     private void OnDestroy()
     {
-        
+
         cancellationTokenSource?.Cancel();
     }
 
     private void CheckAndRemoveDeletedFiles(string folderPath)
     {
-        string projectPath = Application.dataPath.Replace("/Assets", ""); 
+        string projectPath = Application.dataPath.Replace("/Assets", "");
         try
         {
             string trackedFilesOutput = RunGitCommand("ls-files", projectPath);
-            UnityEngine.Debug.Log($"Git 返回的受控文件列表: {trackedFilesOutput}"); 
+            UnityEngine.Debug.Log($"Git 返回的受控文件列表: {trackedFilesOutput}");
             string[] trackedFiles = trackedFilesOutput.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
 
             List<string> deletedFiles = new List<string>();
@@ -397,7 +424,7 @@ public class FileUploader : EditorWindow
 
     private string DecodeUnicode(string input)
     {
-        UnityEngine.Debug.Log($"原始路径：{input}"); 
+        UnityEngine.Debug.Log($"原始路径：{input}");
 
         string decodedString = System.Text.RegularExpressions.Regex.Replace(
             input,
@@ -405,7 +432,7 @@ public class FileUploader : EditorWindow
             match => ((char)Convert.ToInt32(match.Groups[1].Value, 16)).ToString()
         );
 
-        UnityEngine.Debug.Log($"解码后的路径：{decodedString}");  
+        UnityEngine.Debug.Log($"解码后的路径：{decodedString}");
         return decodedString;
     }
     private string CleanPath(string path)
@@ -620,7 +647,7 @@ public class FileUploader : EditorWindow
             WorkingDirectory = workingDirectory,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
-            UseShellExecute = false,  
+            UseShellExecute = false,
             CreateNoWindow = true,
             StandardOutputEncoding = Encoding.UTF8,
             StandardErrorEncoding = Encoding.UTF8
